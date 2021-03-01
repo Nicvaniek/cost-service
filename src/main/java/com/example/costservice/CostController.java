@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.netflix.eureka.EurekaInstanceConfigBean;
-import org.springframework.core.env.Environment;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Random;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
@@ -36,12 +34,10 @@ public class CostController {
     private Long dailyPriceIncrease;
 
 
-    private final Environment environment;
     private final EurekaInstanceConfigBean eurekaInstanceConfig;
 
     @Autowired
-    public CostController(Environment environment, EurekaInstanceConfigBean eurekaInstanceConfig) {
-        this.environment = environment;
+    public CostController(EurekaInstanceConfigBean eurekaInstanceConfig) {
         this.eurekaInstanceConfig = eurekaInstanceConfig;
     }
 
@@ -52,7 +48,6 @@ public class CostController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate flightDate) throws InterruptedException {
         LocalDate now = LocalDate.now();
         BigDecimal currentCost = PRICE_FLOOR;
-        Integer localServerPort = Integer.parseInt(environment.getProperty("local.server.port"));
 
         if ((DAYS.between(now, flightDate) < MULTIPLIER_DAYS_BOUNDARY)) {
             currentCost = PRICE_FLOOR.add(BigDecimal.valueOf((MULTIPLIER_DAYS_BOUNDARY - DAYS.between(now, flightDate)) * dailyPriceIncrease));
@@ -60,14 +55,10 @@ public class CostController {
         if (origin.equals(Location.JOHANNESBURG) || destination.equals(Location.JOHANNESBURG)) {
             currentCost = currentCost.add(BigDecimal.valueOf(LARGE_AIRPORT_FEE));
         }
-
-        // Demonstrate ribbon & hystrix timout failure - by default hystrix will time out after 1s
-//        Thread.sleep(getLatency());
-
-        return ResponseEntity.ok(new Cost(currentCost, DEFAULT_CURRENCY, localServerPort));
+        return ResponseEntity.ok(new Cost(currentCost, DEFAULT_CURRENCY, eurekaInstanceConfig.getInstanceId()));
     }
 
-    @RequestMapping(value = "/test", method = RequestMethod.GET)
+    @RequestMapping(value = "/instance", method = RequestMethod.GET)
     public String testMethod() {
         return eurekaInstanceConfig.getInstanceId();
     }
@@ -75,13 +66,6 @@ public class CostController {
     @RequestMapping(value = "/fallback", method = RequestMethod.GET)
     public ResponseEntity<Cost> fallback() {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
-    }
-
-    private int getLatency() {
-        Random r = new Random();
-        int low = 0;
-        int high = 100;
-        return r.nextInt(high - low) + low;
     }
 
 }

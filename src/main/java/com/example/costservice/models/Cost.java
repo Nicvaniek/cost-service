@@ -12,6 +12,6 @@ import java.math.BigDecimal;
 public class Cost {
     private BigDecimal price;
     private String currency;
-    private Integer localServerPort;
+    private String instanceId;
 
 }

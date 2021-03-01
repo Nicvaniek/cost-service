@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.netflix.eureka.EurekaInstanceConfigBean;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Random;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
@@ -33,10 +31,6 @@ public class CostController {
 
     @Value("${application.dailyPriceIncrease}")
     private Long dailyPriceIncrease;
-
-    @Value("${application.hystrixTimeout}")
-    private boolean hystrixTimeout;
-
 
     private final EurekaInstanceConfigBean eurekaInstanceConfig;
 
@@ -60,30 +54,12 @@ public class CostController {
             currentCost = currentCost.add(BigDecimal.valueOf(LARGE_AIRPORT_FEE));
         }
 
-        System.out.println("Hystrix timeout: " + hystrixTimeout);
-        if (hystrixTimeout) {
-            // Demonstrate ribbon & hystrix timout failure - by default hystrix will time out after 1s
-            Thread.sleep(getLatency());
-        }
         return ResponseEntity.ok(new Cost(currentCost, DEFAULT_CURRENCY, eurekaInstanceConfig.getInstanceId()));
     }
 
     @RequestMapping(value = "/instance", method = RequestMethod.GET)
     public String testMethod() {
         return eurekaInstanceConfig.getInstanceId();
-    }
-
-    @RequestMapping(value = "/fallback", method = RequestMethod.GET)
-    public ResponseEntity<Cost> fallback() {
-        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();
-    }
-
-
-    private int getLatency() {
-        Random r = new Random();
-        int low = 0;
-        int high = 100;
-        return r.nextInt(high - low) + low;
     }
 
 }

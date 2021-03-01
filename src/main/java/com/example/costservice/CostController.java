@@ -2,9 +2,11 @@ package com.example.costservice;
 
 import com.example.costservice.models.Cost;
 import com.example.costservice.models.Location;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.cloud.netflix.eureka.EurekaInstanceConfigBean;
 import org.springframework.core.env.Environment;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -33,14 +35,14 @@ public class CostController {
     @Value("${application.dailyPriceIncrease}")
     private Long dailyPriceIncrease;
 
-    @Value("${eureka.instance.metadataMap.instanceId}") 
-    private String instanceId;
 
     private final Environment environment;
+    private final EurekaInstanceConfigBean eurekaInstanceConfig;
 
     @Autowired
-    public CostController(Environment environment) {
+    public CostController(Environment environment, EurekaInstanceConfigBean eurekaInstanceConfig) {
         this.environment = environment;
+        this.eurekaInstanceConfig = eurekaInstanceConfig;
     }
 
     @RequestMapping(value = "/flight", method = RequestMethod.GET)
@@ -66,8 +68,8 @@ public class CostController {
     }
 
     @RequestMapping(value = "/test", method = RequestMethod.GET)
-    public ResponseEntity<String> testMethod() {
-        return ResponseEntity.ok(instanceId);
+    public String testMethod() {
+        return eurekaInstanceConfig.getInstanceId();
     }
 
     @RequestMapping(value = "/fallback", method = RequestMethod.GET)
